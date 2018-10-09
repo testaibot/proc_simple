@@ -76,8 +76,7 @@ for line in f:
             pos += increment
         elif operation == 'N':
            
-            if mode == 0:
-                curr_key = joinStrings([ref, "_", pos - 1, "_", pos + increment, "_", STRAND[strand]], "\t", cell_id)
+            curr_key = joinStrings([ref, "_", pos - 1, "_", pos + increment, "_", STRAND[strand]], "\t", cell_id)
 
             if curr_key not in n_counts:
                 n_counts[curr_key] = 1
