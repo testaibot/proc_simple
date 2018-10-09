@@ -88,5 +88,5 @@ for line in f:
             offset += increment
 
 for curr_key in n_counts:
-    print(curr_jk, n_counts[curr_key], sep = "\t", end="\n")
+    print(curr_key, n_counts[curr_key], sep = "\t", end="\n")
 
