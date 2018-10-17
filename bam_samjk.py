@@ -47,6 +47,7 @@ else:
     f = open(file).readlines()
 
 for line in f:
+    line = line.rstrip()
     if (line[0]=="@"): 
         print(line)
         continue
