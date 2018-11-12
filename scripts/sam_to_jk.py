@@ -23,7 +23,7 @@ parser = argparse.ArgumentParser(description='Hola\n')
 parser.add_argument('-f', "--file", dest="file", metavar='file', type=str, default = None,
                     help='sam-file')
 parser.add_argument('-nb', "--nbins", dest="nbins", metavar='nbins', type=int,
-                    help='number of bins', default=1)
+                    help='number of bins', default=2147483647)
 
 args = parser.parse_args()
 
