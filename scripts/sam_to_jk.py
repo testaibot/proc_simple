@@ -70,7 +70,7 @@ for line in f:
             pos += increment
         elif operation == 'N':
             bin = nbins-1 if offset>=nbins else offset
-            event = [ref, pos - 1, pos + increment, STRAND[strand], bin, cell_id]
+            event = [ref, pos - 1, pos + increment, STRAND[strand], cell_id]
             event_list.append(event)
             match_intervals.append(match[match_start:offset])
             match_start = offset
