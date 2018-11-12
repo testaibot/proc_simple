@@ -34,9 +34,6 @@ BAM_FREVERSE = 0x10
 STRAND = ["+", "-"]
 
 regex = re.compile("(\d+)(\w)")
-n_counts = {}
-
-n = 0
 
 if(file==None):
     f = fileinput.input()
@@ -86,11 +83,4 @@ for line in f:
         event_list[i].append(match_intervals[i])
         event_list[i].append(match_intervals[i+1])
         event = joinStrings("\t", event_list[i])
-        if event not in n_counts:
-            n_counts[event] = 1
-        else:
-            n_counts[event] = n_counts[event] + 1
-
-for curr_key in n_counts:
-    print(curr_key, n_counts[curr_key], sep = "\t", end="\n")
-
+        print(event)
