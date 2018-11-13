@@ -74,28 +74,33 @@ def classify_event(ev):
     return joinStrings(",",ev)
 
 
-def get_strand_counts(chr, pos, l_count, umi = True):
+def get_strand_counts(cell_id_list, chr, pos, l_count, umi = True):
+    count_strand_cl = [0,0]
     count_strand = [0,0]
-    if (pos, "+") in l_count[chr]:
-        count_strand[0] = len(l_count[chr][(pos, "+")]) if umi else sum(l_count[chr][(pos, "+")].values())
-    
-    if (pos, "-") in l_count[chr]:
-        count_strand[1] = len(l_count[chr][(pos, "-")]) if umi else sum(l_count[chr][(pos, "-")].values())
-        
+    for cell_id in cell_id_list:
+        if chr in l_count[cell_id]:
+            if (pos, "+") in l_count[cell_id][chr]:
+                count_strand[0] = len(l_count[cell_id][chr][(pos, "+")]) if umi else sum(l_count[cell_id][chr][(pos, "+")].values())
+
+            if (pos, "-") in l_count[cell_id][chr]:
+                count_strand[1] = len(l_count[cell_id][chr][(pos, "-")]) if umi else sum(l_count[cell_id][chr][(pos, "-")].values())
+            count_strand_cl[0] += count_strand[0]
+            count_strand_cl[1] += count_strand[1]
     return count_strand
 
-def get_ev_counts(coord, l_tot, r_tot):
+def get_ev_counts(cell_id_list, coord, l_tot, r_tot):
     ev_counts = []
     for pos in coord:
-        l_counts = get_strand_counts(chr, pos, l_tot)
-        r_counts = get_strand_counts(chr, pos, r_tot)
+        l_counts = get_strand_counts(cell_id_list, chr, pos, l_tot)
+        r_counts = get_strand_counts(cell_id_list, chr, pos, r_tot)
         l_strand = "=" if l_counts[0] == l_counts[1] else "+" if l_counts[0] > l_counts[1] else "-"
         r_strand = "=" if r_counts[0] == r_counts[1] else "+" if r_counts[0] > r_counts[1] else "-"
                     
         l_counts = sum(l_counts)
         r_counts = sum(r_counts)
         if r_counts == l_counts:
-            raise Exception('Error: expected simple linear element. Input: composite')
+            return(None)
+            #raise Exception('Error: expected simple linear element. Input: composite')
         elif r_counts > l_counts:
             counts = r_counts
             strand = r_strand
@@ -194,7 +199,7 @@ for chr in lr_uniq:
 cell_clusters = {}
 for cell_id in known_cell_id:
     cell_clusters[cell_id] = {cell_id:1}    
-    
+
 for chr in events:
     for ev_class in events[chr]:
         for ev_coords in events[chr][ev_class]:
