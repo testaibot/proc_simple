@@ -9,12 +9,13 @@ import fileinput
 from itertools import zip_longest
 
 
-known_events = {(1,0):"jk",
+known_events = {
+                #(1,0):"jk",
                 (2,1,0):"A5", 
                 (1,2,0):"A3", 
                 (2,1,2,0):"cass",
-                (2,1,2,1,2,0):"mut_ex",
-                (3,2,3,2,3,0):"mut_ex_cass"
+                #(2,1,2,1,2,0):"mut_ex",
+                #(3,2,3,2,3,0):"mut_ex_cass"
                }
 
 def grouper(iterable, n, fillvalue=None):
