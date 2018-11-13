@@ -37,18 +37,33 @@ def pos_inc(chr, k, d, sign):
         
     d[chr][k] += sign
 
-def pos_append(chr, k, d, val):
+def pos_append(cell_id, chrom, key, umi, d):
+    if cell_id not in d:
+        d[cell_id] = {}
+        
+    if chrom not in d[cell_id]:
+        d[cell_id][chrom] = {}
+        
+    if key not in d[cell_id][chrom]:
+        d[cell_id][chrom][key] = {}
+        
+    if umi not in d[cell_id][chrom][key]:
+        d[cell_id][chrom][key][umi] = 0
+        
+    d[cell_id][chrom][key][umi] += 1
+    
+def event_append(chr, key, val, d):
     val = tuple(val)
     if chr not in d:
         d[chr] = {}
         
-    if k not in d[chr]:
-        d[chr][k] = {}
+    if key not in d[chr]:
+        d[chr][key] = {}
         
-    if val not in d[chr][k]:
-        d[chr][k][val] = 0
+    if val not in d[chr][key]:
+        d[chr][key][val] = 0
         
-    d[chr][k][val] += 1
+    d[chr][key][val] += 1
   
 
 def classify_event(ev):
@@ -111,10 +126,13 @@ parser = argparse.ArgumentParser(description='Hola\n')
 
 parser.add_argument('-f', "--file", dest="file", metavar='file', type=str, default = None,
 help='sam-file')
+parser.add_argument('-fl', "--filter", dest="filter", metavar='filter', type=int, default = 10,
+help='sam-file')
 
 args = parser.parse_args()
 
 file = args.file
+filter_thresh = args.filter
 
 if(file==None):
     f = fileinput.input()
@@ -125,7 +143,7 @@ jk_uniq = {}
 l_tot = {}
 r_tot = {}
 lr_uniq = {}
-lr_tot = {}
+known_cell_id = {}
 
 for line in f:
     temp = line.split('\t')
@@ -136,8 +154,11 @@ for line in f:
     r = int(temp[2])
     strand = temp[3]
     cell_id = temp[4]
-    m_l = temp[5]
-    m_r = temp[6]
+    if cell_id not in known_cell_id:
+        known_cell_id[cell_id] = 0
+    known_cell_id[cell_id] += 1
+    umi_l = temp[5]
+    umi_r = temp[6]
 
     jk_id = (chr, l, r)
     
@@ -147,9 +168,10 @@ for line in f:
         pos_inc(chr, l, lr_uniq, 1)
         pos_inc(chr, r, lr_uniq, -1)
 
-    pos_append(chr, (l, strand), l_tot, (cell_id, m_l))
-    pos_append(chr, (r, strand), r_tot, (cell_id, m_r))
+    pos_append(cell_id, chr, (l, strand), umi_l, l_tot)
+    pos_append(cell_id, chr, (r, strand), umi_r, r_tot)
 
+    
 events = {}
 for chr in lr_uniq:   
     lr_uniq[chr][0] = 0
@@ -163,97 +185,118 @@ for chr in lr_uniq:
         
         if event[len(event)-1] == 0:
             event = classify_event(event)
-            pos_append(chr, event, events, pos)
+            event_append(chr, event, pos, events)
             event = []
             pos = []
     del(lr_uniq[chr][0])
 
+
+cell_clusters = {}
+for cell_id in known_cell_id:
+    cell_clusters[cell_id] = {cell_id:1}    
+    
 for chr in events:
     for ev_class in events[chr]:
         for ev_coords in events[chr][ev_class]:
-            ev_known = False
-            
-            ev_strand = "none"
-            ev_balanced = "none"
-            ev_region = "none"
-            psi = "none"
-            
-            if ev_class in ["cass"]:
-                ev_known = True
-                ev_counts = get_ev_counts(ev_coords, l_tot, r_tot)
-                
-                ev_region = get_ev_region(ev_coords)
-                
-                ev_strand = get_ev_strand(ev_counts)
-                if ev_strand == None: ev_known = False
-                    
-                a = ev_counts[0][1]
-                b = ev_counts[1][1]
-                c = ev_counts[2][1]
-                d = ev_counts[3][1]
-                
-                ev_balance = abs(a-b)-abs(d-c)
-                ev_shift = round(2*b/(b+c),5) 
+            for cluster in cell_clusters:
+                ev_known = False
+                ev_strand = "none"
+                ev_balanced = "none"
+                ev_region = "none"
+                psi = "none"
 
-                psi = round((b+c)/(a+d),5)
-                if a+d < 10: ev_known = False
-                
-                ev_counts = int((ev_counts[0][1]+ev_counts[1][1]+ev_counts[2][1]+ev_counts[3][1])/2)
-                
-            if ev_class in ["A5"]:
-                ev_known = True
-                ev_counts = get_ev_counts(ev_coords, l_tot, r_tot)
-                
-                ev_region = get_ev_region(ev_coords)
-                
-                ev_strand = get_ev_strand(ev_counts)
-                if ev_strand == None: ev_known = False
+                if ev_class in ["cass"]:
+                    ev_counts = get_ev_counts(cell_clusters[cluster], ev_coords, l_tot, r_tot)
+                    if ev_counts == None:
+                        continue
                     
-                a = ev_counts[0][1]
-                b = ev_counts[1][1]
-                c = ev_counts[2][1]
-                
-                ev_balance = a-b-c 
-                ev_shift = "none"
+                    ev_region = get_ev_region(ev_coords)
 
-                psi = round(b/(b+c),5)
-                if a < 10: ev_known = False
-                
-                ev_counts = int((ev_counts[0][1]+ev_counts[1][1]+ev_counts[2][1])/2)
-                
-            if ev_class in ["A3"]:
-                ev_known = True
-                ev_counts = get_ev_counts(ev_coords, l_tot, r_tot)
-                
-                ev_region = get_ev_region(ev_coords)
-                
-                ev_strand = get_ev_strand(ev_counts)
-                if ev_strand == None: ev_known = False
+                    ev_strand = get_ev_strand(ev_counts)
+                    if ev_strand == None:
+                        continue
+
+                    a = ev_counts[0][1]
+                    b = ev_counts[1][1]
+                    c = ev_counts[2][1]
+                    d = ev_counts[3][1]
+
+                    ev_balance = abs(a-b)-abs(d-c)
+                    ev_shift = round(2*b/(b+c),5) 
+
+                    psi = round((b+c)/(a+d),5)
                     
-                a = ev_counts[0][1]
-                b = ev_counts[1][1]
-                c = ev_counts[2][1]
-                
-                ev_balance = c-b-a
-                ev_shift = "none"
+                    ev_counts = int((ev_counts[0][1]+ev_counts[1][1]+ev_counts[2][1]+ev_counts[3][1])/2)
+                    if ev_counts < filter_thresh: 
+                        continue
 
-                psi = round(a/(a+b),5)
-                if c < 10: ev_known = False
-                
-                ev_counts = int((ev_counts[0][1]+ev_counts[1][1]+ev_counts[2][1])/2)
-                
-            if ev_known:
-                print(
-                        chr, 
-                        ev_coords[0],
-                        ev_coords[len(event)-1],
-                        ev_strand,
-                        ev_class,
-                        ev_counts,
-                        ev_balance,
-                        #ev_shift,
-                        psi,
-                        ev_region
-                )
+                    ev_known = True
+
+                if ev_class in ["A5"]:
+                    ev_counts = get_ev_counts(cell_clusters[cluster], ev_coords, l_tot, r_tot)
+                    if ev_counts == None:
+                        continue
+                        
+                    ev_region = get_ev_region(ev_coords)
+
+                    ev_strand = get_ev_strand(ev_counts)
+                    if ev_strand == None:
+                        continue
+
+                    a = ev_counts[0][1]
+                    b = ev_counts[1][1]
+                    c = ev_counts[2][1]
+
+                    ev_balance = a-b-c 
+                    ev_shift = "none"
+
+                    psi = round(b/(b+c),5)
+                    
+                    ev_counts = int((ev_counts[0][1]+ev_counts[1][1]+ev_counts[2][1])/2)
+                    if ev_counts < filter_thresh:
+                        continue
+
+                    ev_known = True
+
+                if ev_class in ["A3"]:
+                    ev_counts = get_ev_counts(cell_clusters[cluster], ev_coords, l_tot, r_tot)
+                    if ev_counts == None:
+                        continue
+
+                    ev_region = get_ev_region(ev_coords)
+
+                    ev_strand = get_ev_strand(ev_counts)
+                    if ev_strand == None:
+                        continue
+
+                    a = ev_counts[0][1]
+                    b = ev_counts[1][1]
+                    c = ev_counts[2][1]
+
+                    ev_balance = c-b-a
+                    ev_shift = "none"
+
+                    psi = round(a/(a+b),5)
+                    
+                    ev_counts = int((ev_counts[0][1]+ev_counts[1][1]+ev_counts[2][1])/2)
+                    if ev_counts < filter_thresh:
+                        continue
+                    
+                    ev_known = True
+
+                if ev_known:
+                    print(
+                            cluster,
+                            chr, 
+                            ev_coords[0],
+                            ev_coords[len(event)-1],
+                            ev_strand,
+                            ev_class,
+                            ev_counts,
+                            ev_balance,
+                            #ev_shift,
+                            psi,
+                            ev_region
+                    )
 
 
