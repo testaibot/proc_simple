@@ -103,22 +103,48 @@ def process_cigar_operations(cigar_increments, cigar_operations):
             raise Exception("Unknown cigar_template")
         else: inf_loop_breaker+=1
 
+def bulk_1(line):
+    spl = {}   
 
-def process_sam_line(line):
     temp = line.split('\t')
-    
-    cigar = temp[5]
-    if cigar == '*':
-        return   
-
     temp[-1] = temp[-1].rstrip()
        
-    cell_id = temp[0].split(".")[0]
-    flag = int(temp[1])
-    ref = temp[2]
-    pos = int(temp[3])
- 
-    match = temp[9]
+    spl["cell_id"] = temp[0].split(":")[0]
+    spl["flag"] = int(temp[1])
+    spl["ref"] = temp[2]
+    spl["pos"] = int(temp[3])
+    spl["cigar"] = temp[5]
+    if spl["cigar"] == '*':
+        return 
+    spl["match"] = temp[9]
+    return spl   
+
+def smart_seq2(line):
+    spl = {}   
+
+    temp = line.split('\t')
+    temp[-1] = temp[-1].rstrip()
+       
+    spl["cell_id"] = temp[0].split(".")[0]
+    spl["flag"] = int(temp[1])
+    spl["ref"] = temp[2]
+    spl["pos"] = int(temp[3])
+    spl["cigar"] = temp[5]
+    if spl["cigar"] == '*':
+        return 
+    spl["match"] = temp[9]
+    return spl
+
+def process_sam_line(line):
+
+    spl = smart_seq2(line)
+
+    cell_id = spl["cell_id"]
+    flag = spl["flag"]
+    ref  = spl["ref"]
+    pos = spl["pos"]
+    cigar = spl["cigar"]
+    match  = spl["match"]
 
     strand = (flag & BAM_FREVERSE)>0
     offset = 0
@@ -154,13 +180,30 @@ def process_sam_line(line):
             if(offsets_range[1][1] - offsets_range[0][1] < 15): continue
             if(offsets_range[2][1] - offsets_range[1][1] < 15): continue
 
-            print(match, offsets_range)
-            ev_stats_send(offsets_range[1][1])
-            ev_stats_send(offsets_range[2][1] - offsets_range[1][1])
+            ev_stats_send(match[offsets_range[0][1]:offsets_range[1][1]])
+            ev_stats_send(match[offsets_range[1][1]:offsets_range[2][1]])
             print(
                     ref,
                     pos + offsets_range[1][0] - 1, 
-                    pos + offsets_range[2][0], 
+                    pos + offsets_range[1][0] - 1, 
+                    STRAND[strand], 
+                    joinStrings(",", event),
+                    cell_id, 
+                    match[offsets_range[0][1]:offsets_range[1][1]], 
+                    match[offsets_range[1][1]:offsets_range[2][1]],
+                    sep = "\t"
+                 )
+
+        if event == ('S', 'M'):
+            if(offsets_range[1][1] - offsets_range[0][1] < 15): continue
+            if(offsets_range[2][1] - offsets_range[1][1] < 15): continue
+
+            ev_stats_send(match[offsets_range[0][1]:offsets_range[1][1]])
+            ev_stats_send(match[offsets_range[1][1]:offsets_range[2][1]])
+            print(
+                    ref,
+                    pos + offsets_range[2][0] - 1, 
+                    pos + offsets_range[2][0] - 1, 
                     STRAND[strand], 
                     joinStrings(",", event),
                     cell_id, 
@@ -198,5 +241,5 @@ else:
 for line in f:
     process_sam_line(line)
 
-for ev in ev_stats:
-    print(ev, ev_stats[ev])
+for ev in sorted(ev_stats, key=ev_stats.get):
+    print("ev_stat:", ev, ev_stats[ev])
