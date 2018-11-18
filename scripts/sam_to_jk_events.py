@@ -167,8 +167,7 @@ def process_sam_line(line):
             if(offsets_range[1][1] - offsets_range[0][1] < 15): continue
             if(offsets_range[3][1] - offsets_range[2][1] < 15): continue
 
-            if(not stat_only): 
-                print(
+            print(
                     ref, 
                     pos + offsets_range[1][0] - 1, 
                     pos + offsets_range[2][0], 
@@ -183,10 +182,7 @@ def process_sam_line(line):
             if(offsets_range[1][1] - offsets_range[0][1] < 15): continue
             if(offsets_range[2][1] - offsets_range[1][1] < 15): continue
 
-            ev_stats_send(match[offsets_range[0][1]:offsets_range[1][1]])
-            ev_stats_send(match[offsets_range[1][1]:offsets_range[2][1]])
-            if(not stat_only): 
-                print(
+            print(
                     ref,
                     pos + offsets_range[1][0] - 1, 
                     pos + offsets_range[1][0] - 1, 
@@ -201,12 +197,8 @@ def process_sam_line(line):
         if event == ('S', 'M'):
             if(offsets_range[1][1] - offsets_range[0][1] < 15): continue
             if(offsets_range[2][1] - offsets_range[1][1] < 15): continue
-
-            ev_stats_send(match[offsets_range[0][1]:offsets_range[1][1]])
-            ev_stats_send(match[offsets_range[1][1]:offsets_range[2][1]])
             
-            if(not stat_only):
-                print(
+            print(
                     ref,
                     pos + offsets_range[1][0] - 1, 
                     pos + offsets_range[1][0] - 1, 
@@ -230,14 +222,10 @@ parser.add_argument('-f', "--file", dest="file", metavar='file', type=str, defau
 parser.add_argument('-nb', "--nbins", dest="nbins", metavar='nbins', type=int,
                     help='number of bins', default=2147483647)
 
-parser.add_argument('-s', "--stat", dest="stat_only", metavar='stat_only', type=int,
-                    help='print contamination stat only', default=False)
-
 args = parser.parse_args()
 
 file = args.file
 nbins = args.nbins
-stat_only = args.stat_only
 BAM_FREVERSE = 0x10
 STRAND = ["+", "-"]
 
@@ -247,13 +235,6 @@ else:
     f = open(file).readlines()
 
 
-if stat_only:
-    from tqdm import tqdm
-    f = tqdm(f)
-
 for line in f:
     process_sam_line(line)
 
-if stat_only:
-    for ev in sorted(ev_stats, key=ev_stats.get):
-        print("ev_stat:", ev, ev_stats[ev])
