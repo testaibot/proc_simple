@@ -104,7 +104,7 @@ def process_cigar_operations(cigar_increments, cigar_operations):
         else: inf_loop_breaker+=1
 
 def bulk_1(line):
-    spl = {}   
+    spl = {} 
 
     temp = line.split('\t')
     temp[-1] = temp[-1].rstrip()
@@ -117,7 +117,7 @@ def bulk_1(line):
     if spl["cigar"] == '*':
         return 
     spl["match"] = temp[9]
-    return spl   
+    return spl 
 
 def smart_seq2(line):
     spl = {}   
@@ -138,6 +138,7 @@ def smart_seq2(line):
 def process_sam_line(line):
 
     spl = smart_seq2(line)
+    if spl == None: return
 
     cell_id = spl["cell_id"]
     flag = spl["flag"]
@@ -159,13 +160,15 @@ def process_sam_line(line):
 
     if len(operations) == 1: return
 
-
+    
     for event, offsets_range in process_cigar_operations(increments, operations):
                 
         if event == ('M', 'N', 'M'):
             if(offsets_range[1][1] - offsets_range[0][1] < 15): continue
             if(offsets_range[3][1] - offsets_range[2][1] < 15): continue
-            print(
+
+            if(not stat_only): 
+                print(
                     ref, 
                     pos + offsets_range[1][0] - 1, 
                     pos + offsets_range[2][0], 
@@ -182,7 +185,8 @@ def process_sam_line(line):
 
             ev_stats_send(match[offsets_range[0][1]:offsets_range[1][1]])
             ev_stats_send(match[offsets_range[1][1]:offsets_range[2][1]])
-            print(
+            if(not stat_only): 
+                print(
                     ref,
                     pos + offsets_range[1][0] - 1, 
                     pos + offsets_range[1][0] - 1, 
@@ -200,10 +204,12 @@ def process_sam_line(line):
 
             ev_stats_send(match[offsets_range[0][1]:offsets_range[1][1]])
             ev_stats_send(match[offsets_range[1][1]:offsets_range[2][1]])
-            print(
+            
+            if(not stat_only):
+                print(
                     ref,
-                    pos + offsets_range[2][0] - 1, 
-                    pos + offsets_range[2][0] - 1, 
+                    pos + offsets_range[1][0] - 1, 
+                    pos + offsets_range[1][0] - 1, 
                     STRAND[strand], 
                     joinStrings(",", event),
                     cell_id, 
@@ -224,11 +230,14 @@ parser.add_argument('-f', "--file", dest="file", metavar='file', type=str, defau
 parser.add_argument('-nb', "--nbins", dest="nbins", metavar='nbins', type=int,
                     help='number of bins', default=2147483647)
 
-args = parser.parse_args()
+parser.add_argument('-s', "--stat", dest="stat_only", metavar='stat_only', type=int,
+                    help='print contamination stat only', default=False)
 
+args = parser.parse_args()
 
 file = args.file
 nbins = args.nbins
+stat_only = args.stat_only
 BAM_FREVERSE = 0x10
 STRAND = ["+", "-"]
 
@@ -238,8 +247,13 @@ else:
     f = open(file).readlines()
 
 
+if stat_only:
+    from tqdm import tqdm
+    f = tqdm(f)
+
 for line in f:
     process_sam_line(line)
 
-for ev in sorted(ev_stats, key=ev_stats.get):
-    print("ev_stat:", ev, ev_stats[ev])
+if stat_only:
+    for ev in sorted(ev_stats, key=ev_stats.get):
+        print("ev_stat:", ev, ev_stats[ev])
