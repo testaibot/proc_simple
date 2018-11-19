@@ -120,7 +120,7 @@ def bulk_1(line):
     return spl 
 
 def smart_seq2(line):
-    spl = {}   
+    spl = {}
 
     temp = line.split('\t')
     temp[-1] = temp[-1].rstrip()
@@ -210,11 +210,6 @@ def process_sam_line(line):
                     sep = "\t"
                  )
 
-ev_stats = {}
-def ev_stats_send(item):
-    if item not in ev_stats:
-        ev_stats[item] = 0
-    ev_stats[item]+=1
 
 parser = argparse.ArgumentParser(description='Hola\n')
 parser.add_argument('-f', "--file", dest="file", metavar='file', type=str, default = None,
