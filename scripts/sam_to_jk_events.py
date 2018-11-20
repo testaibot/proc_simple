@@ -23,15 +23,19 @@ def regex_split(cigar):
     return list(filter(None, regex.split(cigar)))
 
 
+def is_event(event, known_event):
+    if event in known_event:
+        return True
+    return False
+
+known_event1 = {
+                ('M',):1
+               }
+
 known_event2 = {
                 ('M','S'):2, 
                 ('S','M'):1
                }
-
-def is_event2(event2):
-    if event2 in known_event2:
-        return True
-    return False
 
 known_event3 = {
                 ('M','N','M'):2, 
@@ -69,39 +73,41 @@ def event_offsets(old_offset, operations_range, increments_range):
 
     return offset_list
 
-
-def is_event3(event3):
-    if event3 in known_event3:
-        return True
-    return False
-
 def process_cigar_operations(cigar_increments, cigar_operations):
     offset = (0, 0)
     i = 0
     inf_loop_breaker = 0
-    while i < len(cigar_operations)-1:
-        if i < len(cigar_operations)-1:
-            operations_range = cigar_operations[i:i+2]
-            increments_range = cigar_increments[i:i+2]
-            if(is_event2(operations_range)):
-                ev_offsets = event_offsets(offset, operations_range, increments_range)
-                yield (operations_range, ev_offsets)
-                offset = ev_offsets[len(ev_offsets)-1]
-                i+=known_event2[operations_range]
-        
-        if i < len(cigar_operations)-2:
-            operations_range = cigar_operations[i:i+3]
-            increments_range = cigar_increments[i:i+3]
-            if(is_event3(operations_range)):
-                ev_offsets = event_offsets(offset, operations_range, increments_range)
-                yield (operations_range, ev_offsets)
-                offset = ev_offsets[len(ev_offsets)-1]
-                i+=known_event3[operations_range]
-        
-        if inf_loop_breaker > 100:
-            print(cigar_operations)
-            raise Exception("Unknown cigar_template")
-        else: inf_loop_breaker+=1
+
+    if len(cigar_operations) == 1:
+        operations_range = cigar_operations[i:i+1]
+        increments_range = cigar_increments[i:i+1]
+        if(is_event(operations_range, known_event1)):
+            ev_offsets = event_offsets(offset, operations_range, increments_range)
+            yield (operations_range, ev_offsets)
+    else:
+        while i < len(cigar_operations)-1:
+            if i < len(cigar_operations)-1:
+                operations_range = cigar_operations[i:i+2]
+                increments_range = cigar_increments[i:i+2]
+                if(is_event(operations_range, known_event2)):
+                    ev_offsets = event_offsets(offset, operations_range, increments_range)
+                    yield (operations_range, ev_offsets)
+                    offset = ev_offsets[len(ev_offsets)-1]
+                    i+=known_event2[operations_range]
+            
+            if i < len(cigar_operations)-2:
+                operations_range = cigar_operations[i:i+3]
+                increments_range = cigar_increments[i:i+3]
+                if(is_event(operations_range, known_event3)):
+                    ev_offsets = event_offsets(offset, operations_range, increments_range)
+                    yield (operations_range, ev_offsets)
+                    offset = ev_offsets[len(ev_offsets)-1]
+                    i+=known_event3[operations_range]
+            
+            if inf_loop_breaker > 100:
+                print(cigar_operations)
+                raise Exception("Unknown cigar_template")
+            else: inf_loop_breaker+=1
 
 def bulk_1(line):
     spl = {} 
@@ -158,11 +164,25 @@ def process_sam_line(line):
     operations = tuple(cigar_split[i] for i in range(1, len(cigar_split), 2))
     increments = tuple(int(cigar_split[i]) for i in range(0, len(cigar_split), 2))
 
-    if len(operations) == 1: return
+    #if len(operations) == 1: return
 
-    
     for event, offsets_range in process_cigar_operations(increments, operations):
-                
+        
+        if event == ('M',):
+            if(offsets_range[1][1] - offsets_range[0][1] < 15): continue
+
+            print(
+                    ref, 
+                    pos + offsets_range[0][0] - 1, 
+                    pos + offsets_range[1][0], 
+                    STRAND[strand], 
+                    joinStrings(",", event),
+                    cell_id, 
+                    match[offsets_range[0][1]:offsets_range[1][1]], 
+                    "*",
+                    sep = "\t"
+                 )
+
         if event == ('M', 'N', 'M'):
             if(offsets_range[1][1] - offsets_range[0][1] < 15): continue
             if(offsets_range[3][1] - offsets_range[2][1] < 15): continue
