@@ -173,7 +173,7 @@ def process_sam_line(line):
 
             print(
                     ref, 
-                    pos + offsets_range[0][0] - 1, 
+                    pos + offsets_range[0][0], 
                     pos + offsets_range[1][0], 
                     STRAND[strand], 
                     joinStrings(",", event),
@@ -204,8 +204,8 @@ def process_sam_line(line):
 
             print(
                     ref,
-                    pos + offsets_range[1][0] - 1, 
-                    pos + offsets_range[1][0] - 1, 
+                    pos + offsets_range[0][0], 
+                    pos + offsets_range[1][0], 
                     STRAND[strand], 
                     joinStrings(",", event),
                     cell_id, 
@@ -220,8 +220,8 @@ def process_sam_line(line):
             
             print(
                     ref,
-                    pos + offsets_range[1][0] - 1, 
-                    pos + offsets_range[1][0] - 1, 
+                    pos + offsets_range[1][0], 
+                    pos + offsets_range[2][0], 
                     STRAND[strand], 
                     joinStrings(",", event),
                     cell_id, 
