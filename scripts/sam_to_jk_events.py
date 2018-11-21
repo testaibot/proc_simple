@@ -160,7 +160,7 @@ def process_sam_line(line):
     read = [1, 0]
 
     s = (flag & BAM_FREVERSE)>0
-    strand = (flag & BAM_FREAD1) ? (s + read[0]) & 1 : (s + read[1]) & 1
+    strand = (s + read[0]) & 1 if flag & BAM_FREAD1 else (s + read[1]) & 1
     offset = 0
     match_start = 0
     match_intervals = []
