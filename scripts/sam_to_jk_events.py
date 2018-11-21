@@ -153,7 +153,14 @@ def process_sam_line(line):
     cigar = spl["cigar"]
     match  = spl["match"]
 
-    strand = (flag & BAM_FREVERSE)>0
+    BAM_FREAD1 = 0x40
+    BAM_FREAD2 = 0x80
+    BAM_FREVERSE = 0x10
+    STRAND = ["+", "-"]
+    read = [1, 0]
+
+    s = (flag & BAM_FREVERSE)>0
+    strand = (flag & BAM_FREAD1) ? (s + read[0]) & 1 : (s + read[1]) & 1
     offset = 0
     match_start = 0
     match_intervals = []
@@ -164,7 +171,6 @@ def process_sam_line(line):
     operations = tuple(cigar_split[i] for i in range(1, len(cigar_split), 2))
     increments = tuple(int(cigar_split[i]) for i in range(0, len(cigar_split), 2))
 
-    #if len(operations) == 1: return
 
     for event, offsets_range in process_cigar_operations(increments, operations):
         
@@ -241,8 +247,6 @@ args = parser.parse_args()
 
 file = args.file
 nbins = args.nbins
-BAM_FREVERSE = 0x10
-STRAND = ["+", "-"]
 
 if(file==None):
     f = fileinput.input()
