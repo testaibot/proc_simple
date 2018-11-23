@@ -175,7 +175,7 @@ def process_sam_line(line):
     for event, offsets_range in process_cigar_operations(increments, operations):
         
         if event == ('M',):
-            if(offsets_range[1][1] - offsets_range[0][1] < 15): continue
+            if(offsets_range[1][1] - offsets_range[0][1] < 0): continue
 
             print(
                     ref, 
@@ -190,8 +190,8 @@ def process_sam_line(line):
                  )
 
         if event == ('M', 'N', 'M'):
-            if(offsets_range[1][1] - offsets_range[0][1] < 15): continue
-            if(offsets_range[3][1] - offsets_range[2][1] < 15): continue
+            if(offsets_range[1][1] - offsets_range[0][1] < 0): continue
+            if(offsets_range[3][1] - offsets_range[2][1] < 0): continue
 
             print(
                     ref, 
@@ -205,8 +205,8 @@ def process_sam_line(line):
                     sep = "\t"
                  )
         if event == ('M', 'S'):
-            if(offsets_range[1][1] - offsets_range[0][1] < 15): continue
-            if(offsets_range[2][1] - offsets_range[1][1] < 15): continue
+            if(offsets_range[1][1] - offsets_range[0][1] < 0): continue
+            if(offsets_range[2][1] - offsets_range[1][1] < 0): continue
 
             print(
                     ref,
@@ -221,8 +221,8 @@ def process_sam_line(line):
                  )
 
         if event == ('S', 'M'):
-            if(offsets_range[1][1] - offsets_range[0][1] < 15): continue
-            if(offsets_range[2][1] - offsets_range[1][1] < 15): continue
+            if(offsets_range[1][1] - offsets_range[0][1] < 0): continue
+            if(offsets_range[2][1] - offsets_range[1][1] < 0): continue
             
             print(
                     ref,
